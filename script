@@ -1,0 +1,186 @@
+### PERFORMANCE METRICS MODULE -- Enhanced Evaluate Model ###
+# Results of Scoring as input to module
+dataset1 <- maml.mapInputPort(1)
+## CHANGE ## Use input from the 'Score Model' (dataset1) to create vectors (one-column data frames) for actual and predicted values.
+#### Check column names by visualizing output of the 'Score Model'.
+#### Column names for predicted variable may differ depending on which regression model is used,
+#### e.g. 'Scored Label Mean' for Decision Forest Regression, or 'Scored Labels' for Linear regression.
+#### Rename the column in the input data frame with target/label variable values ('Cost' in the example) to have a new name - 'Actual'.
+Actual <- dataset1$Cost
+## CHANGE ## Similarly, rename the column in the input data frame with predicted variable values
+#### ('Predicted Cost' in the example) to have a new name - 'Predicted'.
+Predicted <- dataset1["Predicted Cost"]
+#Frequently used components
+Error <- Actual - Predicted
+squaredError <- Error^2
+absError <- abs(Error)
+### Calculate MAE
+n <- NROW(Actual)
+estMAE <- sum(abs(Error))
+MAE <- estMAE/n
+MAE <- data.frame(MAE)
+### Calculate ME
+ME <- sum(Error)/n
+ME <- data.frame(ME)
+### Calculate SSE
+SSE <- sum(squaredError)
+SSE <- data.frame(SSE)
+### Calculate MSE
+MSE <- sum(squaredError) * (1/n)
+MSE <- data.frame(MSE)
+### Calculate MdAE
+absError <- as.numeric(absError[[1]])
+MdAE <- median(absError, na.rm = FALSE)
+MdAE <- data.frame(MdAE)
+### Calculate RMSE
+###sum of squared errors - used in other metrics
+estMRSEnom <- sum((Error)^2)
+RMSE <- sqrt(estMRSEnom/n)
+RMSE <- data.frame(RMSE)
+#### OPTIONAL correct Calculate NRMSE_sd
+#normalizerSD <- mean((Actual-mean(Actual))^2)
+#NRMSE_sd <- sqrt(mean((Error)^2) / normalizerSD)
+#NRMSE_sd <- data.frame(NRMSE_sd)
+### Calculate NRMSE_sd
+normalizerST_DEV <- sd(Actual)
+a <- sqrt(mean((Error)^2)) ###Correct RMSE
+NRMSE_sd <- a / normalizerST_DEV
+NRMSE_sd <- data.frame(NRMSE_sd)
+### Calculate NRMSE_mm
+normalizerMAX_MIN <- max(Actual) - min(Actual)
+#a <- sqrt(mean((Error)^2)) ###Correct RMSE
+NRMSE_mm <- a / normalizerMAX_MIN
+NRMSE_mm <- data.frame(NRMSE_mm)
+### Calculate RAE
+# Calulate RAE nominator: use numerator from MAE --estMAE
+# Calculate RAE denominator
+M <- mean(Actual)
+## Create vector all members of which equal to mean of Actuals
+AverageAct <- data.frame(matrix(M, ncol=1, nrow = n))
+## Create dataframe of Actuals minus average of Acutals - also used in other metrics
+ACTminusAverACT <- Actual - AverageAct
+estRAEdenom <- sum(abs(ACTminusAverACT))
+#Use numerator from MAE ---eatMAE <- sum(abs(error)))
+RAE <- estMAE/estRAEdenom
+RAE <- data.frame(RAE)
+### Calculate MRAE
+# Numerator - abs(Error) - absError
+# Denominator
+MRAEdenom <- abs(ACTminusAverACT)
+# Calcualte Numerator / Denominator
+MRAEerror <- absError / MRAEdenom
+# Calculate mean of error
+MRAE <- sum(MRAEerror) * (1/n)
+MRAE <- data.frame(MRAE)
+### Calculate MdRAE
+MRAEerror <- as.numeric(MRAEerror[[1]])
+### Calculate MdRAE - median
+MdRAE <- median(MRAEerror, na.rm=FALSE)
+MdRAE <- data.frame(MdRAE)
+### Calculate GMRAE
+# Use MRAE eroor >>> abs(Error) / abs(Act - AveAct) >>> absError/MRAEdenom >>> MRAEerror
+# Calculate logar (ln) of the MRAE error
+LN_MRAEerror <- log(MRAEerror)
+# Calculate sum of ln(MRAE)
+sumLN_MRAEerror <- sum(LN_MRAEerror)
+GMRAE <- exp(sumLN_MRAEerror / n)
+GMRAE <- data.frame(GMRAE)
+### Calculate RSE
+# Calulate RSE numerator -
+### sum of squared errors -estMRSEnom used in other metrics
+#Calculate RSE denominator
+estRSEdenom <- sum((ACTminusAverACT)^2)
+RSE <- estMRSEnom/estRSEdenom
+RSE <- data.frame(RSE)
+### Calculate CoD
+### calculate nominator
+PredMinusAct <- Predicted - Actual
+PredMinusActsquared <- PredMinusAct^2
+CoDnominator <- sum(PredMinusActsquared)
+### Calculate denominator
+#### Use (Actual - AveActual) from RAE ACTminusAverACT
+CoDdenominator <- sum((ACTminusAverACT^2))
+CoD <- 1-(CoDnominator/CoDdenominator)
+### Calculate MPE
+MPE <- sum(Error/Actual) * (100 / n)
+MPE <- data.frame(MPE)
+### Calculate MAPE
+#### Use absError from MAE
+#### Calculate absActual
+absActual <- abs(Actual)
+#### Calculate absError/absActual
+ErrAct <- absError/absActual
+#### Calculate MAPE: sum(ErrAct) *(100/n)
+MAPE <- sum(ErrAct) * (100/n)
+MAPE <- data.frame(MAPE)
+### Calculate MdAPE (median APE)
+MdAPE <- median(ErrAct) * 100
+MdAPE <- data.frame(MdAPE)
+### Calculate SMAPE
+SMAPEnumer <- 2 * absError
+SMAPEdenom <- absActual + abs(Predicted)
+SMAPE <- sum(SMAPEnumer / SMAPEdenom) * (100 / n)
+SMAPE <- data.frame(SMAPE)
+### Calculate SMdAPE
+SMdAPEratio <- (SMAPEnumer / SMAPEdenom)
+SMdAPEratio <- as.numeric(SMdAPEratio[[1]])
+SMdAPE <- median(SMdAPEratio, na.rm = FALSE) * (100)
+SMdAPE <- data.frame(SMdAPE)
+### Calculate RMSPE
+# Use ErrAct <- absError/absActual from MAPE
+# Calculate ErrAct^2
+ErrActP2 <- ErrAct ^ 2
+# Calculate sum{ErractP2}
+SumErrActP2 <- sum(ErrActP2)
+# Multiply SumErrActP2 by (100/n)
+SumErrActP2mean <- SumErrActP2 * (100/n)
+RMSPE <- sqrt(SumErrActP2mean)
+RMSPE <- data.frame(RMSPE)
+### Calculate RMdSPE
+RatioRMdSPE <- (absError / Predicted) ^2
+RatioRMdSPE < as.numeric(RatioRMdSPE[[1]])
+medRMdSPE <- median(RatioRMdSPE, na.rm=FALSE)
+RMdSPE <- sqrt(medRMdSPE *100)
+RMdSPE <- data.frame(RMdSPE)
+### Calculate MASE
+################## ADOPTED from
+# CRAN / tsensembler / R/metrics.r
+# R/metrics.r In tsensembler: Dynamic Ensembles for Time Series Forecasting
+# https://rdrr.io/cran/tsensembler/src/R/metrics.r
+# Author Vitor Cerqueira [aut, cre], Luis Torgo [ctb], Carlos Soares [ctb]
+#' Computing the mean absolute scaled error
+#'#' Mean absolute scaled error using the previous value as
+#' baseline (i.e. a random walk)
+#' Computing the absolute error
+#'#' Element-wise computation of the absolute error loss function.
+#'#' @inheritParams se
+#'#' @family error/performance functions
+#'#' @keywords internal
+#'#' @export
+ae <- function(Actual, Predicted, ...) {
+stopifnot(length(Actual) == length(Predicted),
+is.numeric(Actual),
+is.numeric(Predicted))
+abs(Actual - Predicted)
+}
+len <- length(Actual)
+baseline <- c(NA_real_, Actual[-length(Actual)])
+den <- (len / (len-1)) * sum(ae(Actual, baseline), na.rm = TRUE)
+MASE <- sum(abs(Actual - Predicted)) / den
+MASE <- data.frame(MASE)
+estimate <- cbind(CoD, GMRAE, MAE, MAPE, MASE, MdAE, MdAPE, MdRAE, ME, MPE, MRAE, MSE, NRMSE_mm, NRMSE_sd, RAE, RMdSPE, RMSE, RMSPE, RSE, SMAPE, SMdAPE, SSE)
+# ME, MAE, RMSE, NRMSE_sd, NRMSE_mm, RAE, MRAE, MdRAE, GMRAE, RSE, CoD, SSE, MSE, MdAE, MPE, MAPE, MdAPE, SMAPE, SMdAPE, RMSPE, RMdSPE, MASE)
+estimate <- t(estimate)
+estimate <- data.frame(estimate)
+estimate <- round(estimate, digits = 4) 
+metric_name <- data.frame(metric_name=
+c("CoD", "GMRAE", "MAE", "MAPE", "MASE", "MdAE", "MdAPE", "MdRAE","ME","MPE","MRAE","MSE","NRMSE_max_min","NRMSE_sd","RAE","RMdSPE","RMSE","RMSPE","RSE","SMAPE","SMdAPE","SSE"))
+full_name <- data.frame(full_name=
+c("Coefficient of Determination", "Geometric Mean Relative Absolute Error", "Mean Absolute Error",
+"Mean Absolute Percentage Error", "Mean Absolute Scaled Error", "Median Absolute Error", "Median Absolute Percentage Error", "Median Relative Absolute Error ",
+"Mean Error", "Mean Percentage Error", "Mean Relative Absolute Error", "Mean Squared Error",
+"Normalized Root Mean Squared Error (norm. to max - min)", "Normalized Root Mean Squared Error (norm. to SD)",
+"Relative Absolute Error", "Root Median Square Percentage Error", "Root Mean Squared Error", "Root Mean Square Percentage Error",
+"Relative Squared Error", "Symmetric Mean Absolute Percentage Error", "Symmetric Median Absolute Percentage Error", "Sum of Squared Error"))
+metric_name <- cbind(metric_name, full_name, estimate)
+maml.mapOutputPort("metric_name");
